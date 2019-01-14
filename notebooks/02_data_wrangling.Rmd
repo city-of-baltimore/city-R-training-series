@@ -1,0 +1,15 @@
+---
+title: "City R Training Series: Session 2"
+subtitle: "Data Wrangling"
+output: html_notebook
+---
+
+# Tidy Data
+
+# Working with Dates
+
+# More Tidyverse
+
+# Parameters
+
+# Working with Excel Files

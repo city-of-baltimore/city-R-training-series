@@ -1,0 +1,18 @@
+---
+title: "City R Training Series: Session 1"
+subtitle: "Intro to R"
+output: html_notebook
+---
+
+# Where You Can Go with R
+
+# RStudio Interface
+
+# Data Types and Terminology
+
+# Magrittr Piping
+
+# Loading Data
+
+# Simple dplyr Manipulations
+
