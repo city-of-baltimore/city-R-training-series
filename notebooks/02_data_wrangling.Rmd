@@ -4,12 +4,46 @@ subtitle: "Data Wrangling"
 output: html_notebook
 ---
 
-# Tidy Data
+```{r}
+library(tidyverse)
+df <- read_csv("../data/311_sample.csv")
+```
 
-# Working with Dates
+```{r}
+glimpse(df)
+```
+
+# Tidy Data (Sharon's slides?)
 
 # More Tidyverse
 
-# Parameters
+grepl()
 
-# Working with Excel Files
+_at() 
+_if()
+_all()
+
+# Working with Dates
+
+```{r}
+library(lubridate)
+```
+
+ymd() style processors
+floor_date()
+difftime()
+interval()
+
+## mutate() to convert dates
+
+
+# Recommended Workflow
+
+comments
+notebooks
+scripts (include sourcing)
+projects
+file structures and naming
+
+
+

@@ -4,15 +4,62 @@ subtitle: "Intro to R"
 output: html_notebook
 ---
 
-# Where You Can Go with R
+# Commonly used tools
 
-# RStudio Interface
+library(tidyverse)
 
-# Data Types and Terminology
+View()
+nrow()
+glimpse()
+colnames()
 
-# Magrittr Piping
 
 # Loading Data
 
-# Simple dplyr Manipulations
+
+
+```{r}
+library(tidyverse)
+df <- read_csv("../data/311_sample.csv")
+```
+
+```{r}
+df %>% glimpse()
+```
+
+
+
+# Manipulations and How to Combine them
+
+## Verbs
+
+
+### filter()
+
+```{r}
+out <- df %>% filter(SRTYpe == "asdcasd")
+
+glimpse(out)
+```
+
+
+### mutate()
+
+### select()
+
+### count()
+
+### arrange()
+
+### group_by()
+Conceptually this one is different!
+
+### summarise()
+
+## Putting them together with pipes
+
+### examples
+
+
+
 

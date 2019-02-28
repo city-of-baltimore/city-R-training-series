@@ -4,8 +4,24 @@ subtitle: "Intro to Data Visualization"
 output: html_notebook
 ---
 
-# Recommended Workflow
+# Functions
 
 # Your First Plot
+
+
+
+
+
+## Parameters(?)
+
+# Long v. Wide(?)
+
+gather()
+spread()
+
+
+
+# Working with Excel Files(?)
+
 
 
