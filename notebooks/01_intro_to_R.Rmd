@@ -1,65 +1,208 @@
 ---
-title: "City R Training Series: Session 1"
-subtitle: "Intro to R"
-output: html_notebook
+title: 'City R Training Series: Session 1'
+subtitle: Intro to R
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 ---
 
-# Commonly used tools
+# Loading packages
+Packages are bundles of code that developers share online. These packages are designed to solve specific problems.
 
-library(tidyverse)
+The tidyverse is a group of packages developed by R Studio that "share an underlying design philosophy, grammar, and data structures." Installing the tidyverse actually installs several core packages, including dplyr (for easy data manipulation).
 
-View()
-nrow()
-glimpse()
-colnames()
+```{r}
+install.packages("tidyverse")
+library("tidyverse")
+```
 
+There are other tidyverse packages that are not part of the core packages, which need to be loaded explicitly.
+
+```{r}
+install.packages("readxl")
+library("readxl")
+```
 
 # Loading Data
 
+In government, the starting point for our analyses is often a spreadsheet. Tabular data, when imported into R, is referred to as a dataframe (sometimes abbreviated as 'df').
 
+We've taken a sample of 10,000 records from a 311 dataset available on OpenBaltimore, and saved it as a csv file and as an xlsx file.
+
+Let's try importing the csv.
 
 ```{r}
-library(tidyverse)
 df <- read_csv("../data/311_sample.csv")
 ```
 
+Now import the Excel file.
 ```{r}
-df %>% glimpse()
+df <- read_excel("../data/311_sample.xlsx")
+```
+
+What looks weird about the way the data was import through Excel? Looking at documentation for the function can help us determine what's wrong.
+
+```{r}
+?read_excel
+df <- read_excel("../data/311_sample.xlsx", na = "NA")
+```
+
+# Exploring the data
+
+Let's look at the sampled dataset. You can sort and filter the dataset with View(), but that does not make any changes to the dataset.
+
+```{r}
+View(df)
+```
+
+We can check how many rows (observations) our dataframe has.
+```{r}
+nrow(df)
+```
+
+It's also useful to know what columns (variables) there are in the data.
+```{r}
+colnames(df)
+```
+
+Or we can count the rows and columns, look at the column names, AND preview the data all with one function.
+```{r}
+glimpse(df)
 ```
 
 
+# Ways to Manipulate Data
 
-# Manipulations and How to Combine them
+The dplyr package, which is a core package of the tidyverse, has 5 primary verbs (functions). You can combine these to accomplish most data cleaning and data wrangling tasks. We'll start with filter(), select(), and arrange().
 
 ## Verbs
 
-
 ### filter()
 
-```{r}
-out <- df %>% filter(SRTYpe == "asdcasd")
+filter() works in the exact same way that Excel filters work. You choose a criteria, and the function applies them to choose the correct rows. Two equal signs == is the way to test for equality.
 
-glimpse(out)
+How many rows in our sample are in the Downtown neighborhood? How did you determine how many rows there are?
+
+```{r}
+out <- filter(df, Neighborhood == "Downtown")
+```
+
+```{r}
+out <- filter(df, Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford"))
+```
+
+
+```{r}
+out <- filter(df, !is.na(GeoLocation))
+```
+
+### select()
+select() allows you to choose columns you want to keep.
+
+```{r}
+out <- select(df, ServiceRequestNum, SRType, CreatedDate, CloseDate, Address)
+```
+Instead, you could just choose the columns you want to discard.
+
+```{r}
+out <- select(df, -`2010 Census Wards Precincts`, -`2010 Census Neighborhoods`)
+```
+
+You can also rename columns AS you are selecting them (counterintuitively, the new name goes on the left) or select a range of columns.
+```{r}
+out <- select(df, `SRNum` = ServiceRequestNum, SRType, CreatedDate:Neighborhood)
+```
+
+### arrange()
+
+arrange() allows you to sort the dataframe. In this case, we'll try sorting by neighborhood.
+
+```{r}
+out <- arrange(df, Neighborhood)
+```
+
+You can use desc() around the variable you are sorting to make it sort descending. Here we will sort newest service requests first:
+
+```{r}
+out <- arrange(df, desc(CreatedDate))
+```
+
+You can also sort by levels, such as first sorting by neighborhood and then by the newest service requests:
+
+```{r}
+out <- arrange(df, Neighborhood, desc(CreatedDate))
 ```
 
 
 ### mutate()
 
-### select()
+mutate() allows you to add or modify a column. Let's clean up the addresses a little bit.
+```{r}
+out <- mutate(df,
+              Address = str_remove(Address, " MD,"),
+              New = "Test")
+```
 
-### count()
+## Combining functions through piping
 
-### arrange()
+A basic way to string functions together is to keep modifying the same object.
+```{r}
+out <- filter(df, Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford"))
+
+out <- select(out, ServiceRequestNum, SRType, CreatedDate, CloseDate, Address)
+
+out <- arrange(out, desc(CreatedDate))
+
+out <- mutate(out, Address = str_remove(Address, " MD,"))
+
+```
+
+Pipes allow you to string functions together, and avoid repeating what object you are revising.
+
+```{r}
+out <- df %>%
+  filter(Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford")) %>%
+  select(ServiceRequestNum, SRType, CreatedDate, CloseDate, Address) %>%
+  arrange(desc(CreatedDate)) %>%
+  mutate(Address = str_remove(Address, " MD,"))
+
+```
+
 
 ### group_by()
-Conceptually this one is different!
+group_by() is a function you can use to modify the way that the dplyr functions work. This is particularly useful for the two remaining dplyr core functions, count() and summarise() / summarize().
+
+
+### count()
+count() functions like a pivot table. group_by() controls the rows of the pivot table. First, we'll do a count by neighborhood:
+
+```{r}
+out <- df %>%
+  group_by(Neighborhood) %>%
+  count()
+```
+
+
+We can also get more detailed frequencies, such as looking at the number of service requests by type AND by neighborhood:
+
+```{r}
+out <- df %>%
+  group_by(Neighborhood, SRType) %>%
+  count()
+```
+
 
 ### summarise()
 
-## Putting them together with pipes
+We will cover dates in the next session. For now, without manipulating the dates, we don't have very many numbers with which to work.
 
-### examples
+A little tortured but, for the sake of getting some numbers into the dataset, we can count() to get the number of service requests by neighborhood. Then we can use summarise() to get the average number of service requests across neighborhoods.
 
-
-
-
+```{r}
+out <- df %>%
+  group_by(Neighborhood) %>%
+  count() %>%
+  ungroup() %>%
+  summarise(AvgSRs = mean(n, na.rm = TRUE))
+```
