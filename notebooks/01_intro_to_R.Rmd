@@ -30,7 +30,7 @@ In government, the starting point for our analyses is often a spreadsheet. Tabul
 
 We've taken a sample of 10,000 records from a 311 dataset available on OpenBaltimore, and saved it as a csv file and as an xlsx file.
 
-Let's try importing the csv.
+Let's try importing the csv and 'assigning' ( <- ) it to an 'object'.
 
 ```{r}
 df <- read_csv("../data/311_sample.csv")
@@ -66,8 +66,23 @@ It's also useful to know what columns (variables) there are in the data.
 colnames(df)
 ```
 
-Or we can count the rows and columns, look at the column names, AND preview the data all with one function.
+We often need to know what data type each column is, especially when we are combining data (like we'll do next session). Let's look a little closer at the Agency column. You can work with an individual column within a dataframe by referring to the dataframe, using a dollar sign, then referring to the column.
+
 ```{r}
+class(df$Agency)
+```
+
+Now let's look at the class of the column Zip Codes. Use the ` symbol (backtick under the Escape key on your keyboard) to refer to any columns with a space in it.
+```{r}
+class(df$`Zip Codes`)
+```
+
+
+Alternatively, we can count the rows and columns, look at the column names and data types, AND preview the data all with one function.
+
+We can also leave a comment for ourselves / other programmers (#)
+```{r}
+# From sample of 311 data as of Feb 2019
 glimpse(df)
 ```
 
@@ -88,11 +103,17 @@ How many rows in our sample are in the Downtown neighborhood? How did you determ
 out <- filter(df, Neighborhood == "Downtown")
 ```
 
+We can also filter for ALL neighborhoods except for Downtown.
+```{r}
+out <- filter(df, Neighborhood != "Downtown")
+```
+
+Let's get more advanced and filter for a group of neighborhoods. c() is the function used to concatenate, or combine elements into a vector. %in% checks if the element on the left is in the vector on the right.
 ```{r}
 out <- filter(df, Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford"))
 ```
 
-
+Finally, let's check for GeoLocations that are NOT (!) blank.
 ```{r}
 out <- filter(df, !is.na(GeoLocation))
 ```
@@ -158,7 +179,7 @@ out <- mutate(out, Address = str_remove(Address, " MD,"))
 
 ```
 
-Pipes allow you to string functions together, and avoid repeating what object you are revising.
+Pipes allow you to string functions together, and avoid repeating what object you are revising. 
 
 ```{r}
 out <- df %>%
