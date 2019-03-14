@@ -41,11 +41,8 @@ Now import the Excel file.
 df <- read_excel("../data/311_sample.xlsx")
 ```
 
-What looks weird about the way the data was import through Excel? Looking at documentation for the function can help us determine what's wrong.
-
 ```{r}
 ?read_excel
-df <- read_excel("../data/311_sample.xlsx", na = "NA")
 ```
 
 # Exploring the data
@@ -196,7 +193,7 @@ group_by() is a function you can use to modify the way that the dplyr functions 
 
 
 ### count()
-count() functions like a pivot table. group_by() controls the rows of the pivot table. First, we'll do a count by neighborhood:
+count() functions like a pivot table set to count. group_by() controls the rows of the pivot table. First, we'll do a count by neighborhood:
 
 ```{r}
 out <- df %>%
@@ -216,14 +213,17 @@ out <- df %>%
 
 ### summarise()
 
-We will cover dates in the next session. For now, without manipulating the dates, we don't have very many numbers with which to work.
-
-A little tortured but, for the sake of getting some numbers into the dataset, we can count() to get the number of service requests by neighborhood. Then we can use summarise() to get the average number of service requests across neighborhoods.
+summarise() allows you to aggregate data like a pivot table set to average, max, min, median, etc. Here we are looking at the average number of days that an SR stayed open, by neighborhood.
 
 ```{r}
 out <- df %>%
   group_by(Neighborhood) %>%
-  count() %>%
-  ungroup() %>%
-  summarise(AvgSRs = mean(n, na.rm = TRUE))
+  summarise(`AvgDaysOpen` = mean(DaysOpen, na.rm = TRUE))
+```
+
+We can change how we summarise, for example, to look at the median instead.
+```{r}
+out <- df %>%
+  group_by(Neighborhood) %>%
+  summarise(`MedianDaysOpen` = median(DaysOpen, na.rm = TRUE))
 ```
