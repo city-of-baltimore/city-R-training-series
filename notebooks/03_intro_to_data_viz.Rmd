@@ -4,7 +4,6 @@ subtitle: "Intro to Data Visualization"
 output: html_notebook
 ---
 
-# Functions
 
 # Your First Plot
 

@@ -1,7 +1,9 @@
 ---
 title: "City R Training Series: Session 2"
 subtitle: "Data Wrangling"
-output: html_notebook
+output: 
+  html_notebook:
+    toc: true
 ---
 
 ```{r}
@@ -13,37 +15,321 @@ df <- read_csv("../data/311_sample.csv")
 glimpse(df)
 ```
 
-# Tidy Data (Sharon's slides?)
+# Quick Review of Piping
+
+As a reminder, the "%>%" is called a pipe, and it allows us to string data maniuplations together. (It's passing the result of each function as the first argument to the next function, so for example the first pipe is passing "df" as the first argument to the filter function.)
+
+The next two code chunks give us the same result, but notice how much cleaner and more readable our code is when we use the pipe.
+
+```{r}
+out <- select(arrange(filter(df, Neighborhood == "Arcadia"), SRRecordID), SRType)
+out
+```
+
+```{r}
+out2 <- df %>% filter(Neighborhood == "Arcadia") %>% arrange(SRRecordID) %>% select(SRType)
+out2
+```
+
+It's good coding practice to limit your lines to less than 80 characters in width. You can enter a carriage return after a pipe and after commas that separate arguments to functions to keep your code clean.
+
+```{r}
+out <- df %>% 
+  filter(Neighborhood == "Arcadia") %>% 
+  arrange(SRRecordID) %>% 
+  select(SRRecordID, 
+         SRType, 
+         CreatedDate, 
+         Neighborhood, 
+         Agency) %>%
+  head(5)
+  
+out
+```
+
+We'll cover more workflow and structure issues later, but one more to get on your radar right now is comments. Anything after a "#" sign is not interpreted as R code and is simply left as text. Comments are an **essential** feature of good code. They remind you and others of how and why you made a decision about how to write your code or particulars of a dataset.
+
+
+```{r}
+# you may have figured out by now that if you don't store your result to a new object,
+# you can display and see the result but it isn't saved to a variable. Notice
+# I don't store this to an object named "out" as I did previously. The "out" 
+# object is therefore still whatever the previous result was.
+
+df %>% 
+  filter(Neighborhood == "Arcadia") %>% 
+  count(SRType) %>% # if you pass a column name to count, it automatically 
+                    # groups on that column and returns the count of each value
+                    # in a new column named "n"
+  arrange(desc(n))  # so now I can arrange by descending n to see the top SR types first
+
+```
+
+The count function is extremely handy for getting a feel for your categorical data - what are the unique values the field can take and how often does each occur?
+
+But, as we saw last time, there are other summary statistics we might care about for numeric data. For example, we might want to know the average number of days SR's are open by neighborhood. For that, we can group_by and then summarise, and then even arrange so we can see the longest ones first.
+
+```{r}
+df %>% 
+  group_by(Neighborhood) %>% 
+  summarise(avg_days_open = mean(DaysOpen),
+            med_days_open = median(DaysOpen)) %>%
+  arrange(desc(avg_days_open))
+```
+
+What's going on on the Loyola/Notre Dame Campus? 
+
+```{r}
+df %>% filter(Neighborhood == "Loyola/Notre Dame")
+```
+
+There are only three SR's in our dataset for Loyola/Notre Dame, one of which was a fire inspection request that took over a year to close out, dragging our average up. (This also points to why it's important to use the median in addition to the mean!)
+
+Let's also look at the average and median days open by SR type.
+
+```{r}
+df %>%
+  group_by(SRType) %>%
+  summarise(avg_days_open = mean(DaysOpen),
+            med_days_open = median(DaysOpen),
+            count = n()) %>% # same thing as count function, but we're calculating
+                             # other summary stats so we include it like this
+  arrange(desc(avg_days_open))
+```
+
+What if we wanted to do this by neighborhood *and* type jointly? Stick them both in the group_by.
+
+```{r}
+df %>%
+  group_by(Neighborhood, SRType) %>%
+  summarise(avg_days_open = mean(DaysOpen),
+            med_days_open = median(DaysOpen),
+            count = n()) %>% # same thing as count function, but we're calculating
+                             # other summary stats so we include it like this
+  filter(count >= 10) %>% # let's just look for combos where there's at least 10 samples
+  arrange(desc(avg_days_open))
+```
+
+
 
 # More Tidyverse
 
-grepl()
+## Grep (searching for patterns)
 
-_at() 
-_if()
-_all()
+Previously we covered how to use the filter() function from the dpylr package (part of the tidyverse). The filter() function does exactly what it sounds like: it filters a dataframe based on criteria that you give it. For example, if we want all the SR's that are in Belair-Edison that were open at least 10 days, we would do the following:
+
+```{r}
+df %>% 
+  filter(Neighborhood == "Belair-Edison",
+         DaysOpen >= 10) 
+```
+
+But what if I have a text or categorical field where I don't know the exact value of what I'm looking for - maybe I only know that the field contains a certain word or phrase?
+
+Enter the "grep" series of functions. These are part of base R and allow us to search for matches to a pattern.
+
+Take a look at the help file to get a feel for the different kinds of things you can do with "grepping" - not just searching and filtering but also finding and replacing text patterns.
+
+```{r}
+?grep
+```
+
+From the documentation you'll see that grepl returns a logical vector - a column the same length of the input containing only T's and F's. We can use this in the filter we learned above to find only rows where a pattern is matched in a field.
+
+The first argument to grepl is the pattern, the second is the field where we want to find the pattern. Notice that in the Address field for df, street names are in all caps but I'm using lowercase. The grepl function has an argument called "ignore.case" that we can set to True.
+
+```{r}
+df %>% filter(grepl("edmondson", Address, ignore.case = T))
+```
+
+Another good one to know is gsub, which allows us to replace one pattern with another.
+
+```{r}
+df %>% 
+  mutate(
+    Address_new = gsub("AVE", "Avenue", Address, ignore.case = T)
+    ) %>%
+  filter(grepl("ave", Address, ignore.case = T)) %>%
+  select(Address, Address_new) %>%
+  head()
+```
+
+## "Scoped Variants" of summarise, mutate, and transmute
+
+
+
+```{r}
+df %>% 
+  summarise_at(
+    vars(Latitude, Longitude), 
+    funs(max, min), na.rm = T
+  )
+```
+
+```{r}
+df %>% summarise_if(is.numeric, max, na.rm = T)
+```
+
+```{r}
+df %>% 
+  select(SRType, Latitude, Longitude) %>%
+  group_by(SRType) %>%
+  summarise_all(max, na.rm = T)
+  
+```
 
 # Working with Dates
 
+Let's take another look at the columns that we have, specifically their data types.
+
 ```{r}
+glimpse(df)
+```
+
+There are clearly some date columns in there, but they came in as character columns. We want R to recognize them as dates so we can take advantage of some date-specific functionality. 
+
+First, we need to load the lubridate package. (It's part of the tidyverse that we installed, but isn't automatically loaded with the rest of tidyverse so we need to load it explicitly.)
+
+```{r}
+# Normally you'd want to do all your library() calls at the 
+# very top of your notebook or script
 library(lubridate)
 ```
 
-ymd() style processors
-floor_date()
-difftime()
+First, let's try parsing one of the date columns alone. We'll use the parse_date_time function from lubridate and tell it exactly what order the date/time components come in. (Note: you can also use the function as.Date in base R to process dates.)
+
+```{r}
+df %>% 
+  mutate(
+    CreatedDate_new = parse_date_time(
+      CreatedDate, 
+      orders = "%m%d%y %H%M%S %p" # this is how we tell it what order
+                                  # the components come in
+  )) %>%
+  select(CreatedDate, CreatedDate_new) %>% # check our work
+  head()
+```
+
+Now that we know how it works, we'll use our _at modification that we used on the summarise function previously to change all the columns we care about to dates (and store it back to df).
+
+```{r}
+df2 <- df %>%
+  mutate_at(vars(CreatedDate, CloseDate, DueDate, StatusDate),
+            funs(parse_date_time), orders = "%m%d%y %H%M%S %p")
+```
+
+```{r}
+df2 %>% select(CreatedDate, DueDate, CloseDate, StatusDate) %>% glimpse()
+```
+
+The function floor_date is useful if you only care that something happened in a particular month, year, week, etc.  It returns the date's "floor" for whatever level of granularity you care about.
+
+```{r}
+df2 %>% 
+  mutate(CreatedDate_month = floor_date(CreatedDate, "month")) %>% 
+  select(CreatedDate, CreatedDate_month) %>%
+  head()
+```
+
+So now we can count up how many SR's were created each month.
+
+```{r}
+df2 %>% 
+  mutate(CreatedDate_month = floor_date(CreatedDate, "month")) %>% 
+  count(CreatedDate_month)
+```
+
+If we want to recreate the "DaysOpen" field by calculating the difference between ClosedDate and CreatedDate, we can use difftime. (I'm also passing the new difftime to the round function with 0 for the number of digits argument to round it to the nearest day.)
+
+```{r}
+df2 %>%
+  mutate(DaysOpen_new = difftime(CloseDate, CreatedDate, units = "days") %>% round(0)) %>%
+  select(CreatedDate, CloseDate, DaysOpen, DaysOpen_new)
+```
+
 interval()
-
-## mutate() to convert dates
-
 
 # Recommended Workflow
 
-comments
-notebooks
-scripts (include sourcing)
-projects
-file structures and naming
+## Scripts
 
+So far we've been working in an R notebook. We've done this to show you a format that we think will be very useful for you to create documents and reports where you'll want to explain analysis, plots, and enables you to rerun and send the report anytime you need to refresh the data in it.
 
+We skipped over scripts. Scripts are the simplest way of saving code and are used in all programming languages. In notebooks only what's in a "code chunk" is interpreted as code and is executed; in a script, everything is considered code (unless, of course, it's a comment). Scripts can run other scripts, and notebooks can run scripts.
 
+We've included an example script, and we'll "source" it here in the notebook. You can see the result of running the script below.
+
+```{r}
+source("script_example.R")
+```
+
+While notebooks (and other R markdown types) are good for documenting and explaining an analysis to others, here are some examples of when you might want to use scripts: 
+
+- You want to run a whole bunch of code that no one else needs to see executed
+- Code that needs to be run in one shot
+- When you have a complex analysis and want to break up code into multiple scripts for organization
+- When you have an R shiny app or are building a data product that runs code behind the scenes
+
+## Functions
+
+If you look at the script, we do one other thing besides printing the date and time. We create a function. A function is a block of code that you want to reuse multiple times. A function can take inputs and arguments and return an output. The output could be anything - another dataframe, a single string or number, a plot, or it could read or write a file. Everything we've been doing so far uses pre-built functions from either base R or the tidyverse, but we can create as many custom, reusable functions as we want.
+
+Take a look at your environment to the left. When we sourced script_example.R, a new object showed up at the bottom under the "functions" heading.
+
+our_first_function takes an input, multiplies it by 2, and returns the result.
+
+```{r}
+our_first_function(12)
+```
+
+You'll notice in the function definition the input is set by default to 2, so if we call the function without giving it a number explicitly, it'll use 2 as the input.
+
+```{r}
+our_first_function()
+```
+
+What happens if we pass it something that isn't numeric?
+
+```{r}
+our_first_function("Justin")
+```
+
+Functions are incredibly powerful and are an important building block for programming in any language.
+
+## Projects
+
+From [this description](https://support.rstudio.com/hc/en-us/articles/200526207-Using-Projects) of projects from the RStudio folks, here are a few useful things a project does for you when you open it:
+
+- A new R session (process) is started
+- The .RData file in the project's main directory is loaded (if project options indicate that it should be loaded).
+- The .Rhistory file in the project's main directory is loaded into the RStudio History pane (and used for Console Up/Down arrow command history).
+- The current working directory is set to the project directory.
+- Previously edited source documents are restored into editor tabs
+- Other RStudio settings (e.g. active tabs, splitter positions, etc.) are restored to where they were the last time the project was closed.
+
+## File Structures and Naming
+
+I'll show a few examples during the session. No one right way to do this, but there are plenty of best practices and things not to do (like store everything in one folder.)
+
+Here's a sample file structure:
+
+- myproject.Rproj
+- data/
+  - raw/
+  - processed/
+- output/
+  - figs/
+- notebooks/
+- src/ (or just "code")
+
+Pay attention to anything Jenny Bryan has to say on this topic, including [this](https://speakerdeck.com/jennybc/how-to-name-files?slide=27).
+
+# Additional Resources
+
+[R for Data Science](https://r4ds.had.co.nz/): Free online book written by the dude that has led the development of the tidyverse. Highly recommended.
+
+[Data wrangling cheat sheet](https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf)
+
+[lubridate cheat sheet](https://rawgit.com/rstudio/cheatsheets/master/lubridate.pdf)
+
+[Jenny Bryan on Projects and Workflow](https://www.tidyverse.org/articles/2017/12/workflow-vs-script/): She's done tons of thinking on best ways to organize your R workflow - basically just do what she says.
