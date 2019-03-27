@@ -4,6 +4,11 @@ subtitle: "Intro to Data Visualization"
 output: html_notebook
 ---
 
+```{r}
+library("tidyverse")
+library("readxl")
+library("lubridate")
+```
 
 # Your First Plot
 
@@ -11,16 +16,122 @@ output: html_notebook
 
 
 
-## Parameters(?)
+# Dynamic vs Static Scripts
 
-# Long v. Wide(?)
+Consider this example, which should look familiar (most of it is from session 1).
 
-gather()
-spread()
+We first extracted this sample of 311 data in February 2019. What would we have to do in this example to change the dataset to a more updated data set? What if we want to show more rows?
+
+```{r}
+
+df <- read_excel("../data/311_sample.xlsx") %>%
+  filter(Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford")) %>%
+  select(ServiceRequestNum, SRType, CreatedDate, CloseDate, Address) %>%
+  arrange(desc(CreatedDate)) %>%
+  mutate(Address = str_remove(Address, " MD,")) %>%
+  write.csv("311_output_2019-02-25.csv")
 
 
+```
 
-# Working with Excel Files(?)
+As your scripts get more complex, there are more options that you need to sort through for any given dataset. 'Hard coding' in 'options' (such as file names) makes your code difficult to maintain over time. Pulling the options to the top helps you make changes quickly and efficiently.
 
+```{r}
+dir.create("../outputs/")
+```
+
+```{r}
+
+file.input <- "../data/311_sample.xlsx"
+file.output <- "../outputs/311_output_2019-02-25.csv"
+
+df <- read_excel(file.input)
+
+out <- df %>%
+  filter(Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford")) %>%
+  select(ServiceRequestNum, SRType, CreatedDate, CloseDate, Address) %>%
+  arrange(desc(CreatedDate)) %>%
+  mutate(Address = str_remove(Address, " MD,"))
+
+write.csv(out, file.output)
+```
+
+We can also make our scripts more dynamic in other ways:
+
+```{r}
+
+file.input <- "../data/311_sample.xlsx"
+
+df <- read_excel(file.input)
+
+out <- df %>%
+  filter(Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford")) %>%
+  select(ServiceRequestNum, SRType, CreatedDate, CloseDate, Address) %>%
+  arrange(desc(CreatedDate)) %>%
+  mutate(Address = str_remove(Address, " MD,"))
+
+write.csv(out, paste0("../outputs/311_output_", today(), ".csv"))
+
+```
+
+
+# Working with Excel Files
+
+We often have to distribute data through Excel files. A lot of the tedium is in the formatting of the data. The openxlsx package can export formatted Excel sheets for you.
+
+```{r}
+install.packages("openxlsx")
+```
+
+```{r}
+library("openxlsx")
+excel <- createWorkbook()
+
+# adding a tab
+addWorksheet(excel, "Select Neighborhoods")
+
+# choosing data for that tab
+writeDataTable(excel, "Select Neighborhoods", out)
+
+# exporting
+saveWorkbook(excel, paste0("../outputs/311_output_", today(), ".xlsx"))
+```
+
+This gives us a very basically formatted spreadsheet. What options do we have?
+
+
+```{r}
+vignette("formatting", package = "openxlsx")
+```
+
+```{r}
+?addWorksheet
+```
+
+```{r}
+?writeDataTable
+```
+
+```{r}
+excel <- createWorkbook()
+
+# adding a tab
+addWorksheet(excel, "Select Neighborhoods",
+                    header = c("&[File]", "&[Tab]", "&[Date]"),
+                    footer = c(NA, "&[Page] of &[Pages]", NA))
+
+# choosing data for that tab
+writeDataTable(excel, "Select Neighborhoods", out, tableStyle = "TableStyleLight1")
+
+# auto setting column width
+setColWidths(excel, "Select Neighborhoods", 1:ncol(out), widths = "auto")
+
+# setting the page orientation and ensuring that headers are repeated on subsequent pages when printing
+pageSetup("Select Neighborhoods", "landscape", printTitleRows = 1)
+
+# exporting
+saveWorkbook(excel, paste0("../outputs/311_output_", today(), ".xlsx"), overwrite = TRUE)
+
+```
 
 
