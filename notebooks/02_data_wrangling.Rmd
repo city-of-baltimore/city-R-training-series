@@ -13,6 +13,7 @@ df <- read_csv("../data/311_sample.csv")
 
 ```{r}
 glimpse(df)
+View(df)
 ```
 
 # Quick Review of Piping
@@ -57,7 +58,8 @@ We'll cover more workflow and structure issues later, but one more to get on you
 # object is therefore still whatever the previous result was.
 
 df %>% 
-  filter(Neighborhood == "Arcadia") %>% 
+  # filter(Neighborhood == "Arcadia") %>% 
+  filter(ZipCode == 21211) %>%
   count(SRType) %>% # if you pass a column name to count, it automatically 
                     # groups on that column and returns the count of each value
                     # in a new column named "n"
@@ -80,6 +82,8 @@ df %>%
 What's going on on the Loyola/Notre Dame Campus? 
 
 ```{r}
+filter(df, Neighborhood == "Loyola/Notre Dame")
+
 df %>% filter(Neighborhood == "Loyola/Notre Dame")
 ```
 
@@ -139,7 +143,7 @@ From the documentation you'll see that grepl returns a logical vector - a column
 The first argument to grepl is the pattern, the second is the field where we want to find the pattern. Notice that in the Address field for df, street names are in all caps but I'm using lowercase. The grepl function has an argument called "ignore.case" that we can set to True.
 
 ```{r}
-df %>% filter(grepl("edmondson", Address, ignore.case = T))
+df %>% filter(!grepl("edmondson", Address, ignore.case = T))
 ```
 
 Another good one to know is gsub, which allows us to replace one pattern with another.
@@ -149,13 +153,24 @@ df %>%
   mutate(
     Address_new = gsub("AVE", "Avenue", Address, ignore.case = T)
     ) %>%
-  filter(grepl("ave", Address, ignore.case = T)) %>%
+  filter(grepl("Avenue", Address_new, ignore.case = T)) %>%
   select(Address, Address_new) %>%
   head()
 ```
 
 ## "Scoped Variants" of summarise, mutate, and transmute
 
+
+```{r}
+df %>%
+  summarise(Latitude_max = max(Latitude, na.rm = T),
+            Longitude_max = max(Longitude, na.rm = T))
+```
+
+
+```{r}
+df %>% filter(is.na(Latitude)) 
+```
 
 
 ```{r}
@@ -167,7 +182,9 @@ df %>%
 ```
 
 ```{r}
-df %>% summarise_if(is.numeric, max, na.rm = T)
+df %>% 
+  select(-ZipCode) %>%
+  summarise_if(is.numeric, max, na.rm = T)
 ```
 
 ```{r}
@@ -175,7 +192,15 @@ df %>%
   select(SRType, Latitude, Longitude) %>%
   group_by(SRType) %>%
   summarise_all(max, na.rm = T)
-  
+
+
+df %>% 
+  select(SRType, Latitude, Longitude) %>%
+  group_by(SRType) %>%
+  summarise(Lat_max = max(Latitude, na.rm = T),
+            Long_max = max(Longitude, na.rm = T))
+
+
 ```
 
 # Working with Dates
@@ -196,19 +221,28 @@ First, we need to load the lubridate package. (It's part of the tidyverse that w
 library(lubridate)
 ```
 
+
+
 First, let's try parsing one of the date columns alone. We'll use the parse_date_time function from lubridate and tell it exactly what order the date/time components come in. (Note: you can also use the function as.Date in base R to process dates.)
 
 ```{r}
 df %>% 
   mutate(
-    CreatedDate_new = parse_date_time(
-      CreatedDate, 
-      orders = "%m%d%y %H%M%S %p" # this is how we tell it what order
-                                  # the components come in
-  )) %>%
+    CreatedDate_new = parse_date_time(CreatedDate, 
+                                      orders = "%m%d%y %H%M%S %p" 
+    )) %>%
   select(CreatedDate, CreatedDate_new) %>% # check our work
   head()
 ```
+```{r}
+df %>% 
+  mutate(
+    CreatedDate_new = as.Date(CreatedDate, format("%m/%d/%Y"))
+  ) %>%
+  select(CreatedDate, CreatedDate_new) %>% # check our work
+  head()
+```
+
 
 Now that we know how it works, we'll use our _at modification that we used on the summarise function previously to change all the columns we care about to dates (and store it back to df).
 
@@ -230,7 +264,12 @@ df2 %>%
   select(CreatedDate, CreatedDate_month) %>%
   head()
 ```
-
+```{r}
+df2 %>% 
+  mutate(CreatedDate_year = floor_date(CreatedDate, "year")) %>% 
+  select(CreatedDate, CreatedDate_year) %>%
+  head()
+```
 So now we can count up how many SR's were created each month.
 
 ```{r}
@@ -243,11 +282,19 @@ If we want to recreate the "DaysOpen" field by calculating the difference betwee
 
 ```{r}
 df2 %>%
-  mutate(DaysOpen_new = difftime(CloseDate, CreatedDate, units = "days") %>% round(0)) %>%
+  mutate(DaysOpen_new = difftime(
+    CloseDate, CreatedDate, units = "days") %>% round(0)) %>%
   select(CreatedDate, CloseDate, DaysOpen, DaysOpen_new)
 ```
 
-interval()
+
+```{r}
+df %>% 
+  group_by(SRType) %>%
+  mutate(SRType_count = n()) %>%
+  select(SRType, SRType_count) 
+```
+
 
 # Recommended Workflow
 
