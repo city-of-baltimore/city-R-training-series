@@ -1,9 +1,7 @@
 ---
 title: "City R Training Series: Session 2"
 subtitle: "Data Wrangling"
-output: 
-  html_notebook:
-    toc: true
+output: html_notebook
 ---
 
 ```{r}

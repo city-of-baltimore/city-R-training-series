@@ -12,15 +12,70 @@ library("lubridate")
 
 # Your First Plot
 
+Consider this example, which should look familiar (most of it is from session 1).
+
+```{r}
+
+df <- read_excel("../data/311_sample.xlsx") %>%
+  filter(Neighborhood %in% c("Middle East", "McElderry Park", "Milton-Montford")) %>%
+  select(ServiceRequestNum, SRType, CreatedDate, CloseDate, Address)
+
+```
+
+If we want to count the number of service requests created in each year, we'll need to process CreatedDate again. Here's an alternative to parse_date_time. We specify the order the date/time components come in through the function name itself.
+
+```{r}
+
+plot_df <- df %>%
+  mutate(Year = mdy_hms(CreatedDate))
+
+```
+
+Now that R knows that that column is a date, we can extract the year. 
+
+```{r}
+
+plot_df <- plot_df %>%
+  mutate(Year = year(Year))
+
+```
+
+ggplot2 is a popular plotting package based on the "grammar of graphics" -- "a tool that enables us to concisely describe the components of a graphic." (Wickham 2010).
+
+You can layer the following components to make a graphic:
+* data and aesthetic mappings,
+* geometric objects,
+* scales,
+* facet specification.
+* statistical transformations, and
+* the coordinate system.
 
 
+```{r}
 
+plot <- ggplot(plot_df, aes(x = Year)) +
+  geom_bar(stat = "count")
+
+plot
+
+```
+
+We can continue to modify this plot by layering more components.
+
+```{r}
+
+plot +
+  geom_text(stat = "count", aes(label=..count..), vjust = -.5) +
+  theme_minimal() +
+  labs(title = "Middle East, McElderry Park, Milton-Montford Service Requests",
+       x = "Calendar year",
+       y = "Number of service requests")
+
+```
 
 # Dynamic vs Static Scripts
 
-Consider this example, which should look familiar (most of it is from session 1).
-
-We first extracted this sample of 311 data in February 2019. What would we have to do in this example to change the dataset to a more updated data set? What if we want to show more rows?
+We saw this code in session 1. We first extracted this sample of 311 data in February 2019. What would we have to do in this example to change the dataset to a more updated data set? What if we want to show more rows?
 
 ```{r}
 
@@ -123,11 +178,11 @@ addWorksheet(excel, "Select Neighborhoods",
 # choosing data for that tab
 writeDataTable(excel, "Select Neighborhoods", out, tableStyle = "TableStyleLight1")
 
-# auto setting column width
+# auto setting column widths
 setColWidths(excel, "Select Neighborhoods", 1:ncol(out), widths = "auto")
 
 # setting the page orientation and ensuring that headers are repeated on subsequent pages when printing
-pageSetup("Select Neighborhoods", "landscape", printTitleRows = 1)
+pageSetup(excel, "Select Neighborhoods", "landscape", printTitleRows = 1)
 
 # exporting
 saveWorkbook(excel, paste0("../outputs/311_output_", today(), ".xlsx"), overwrite = TRUE)

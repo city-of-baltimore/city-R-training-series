@@ -1,10 +1,7 @@
 ---
 title: 'City R Training Series: Session 1'
 subtitle: Intro to R
-output:
-  pdf_document: default
-  html_document:
-    df_print: paged
+output: html_notebook
 ---
 
 # Loading packages
@@ -13,14 +10,12 @@ Packages are bundles of code that developers share online. These packages are de
 The tidyverse is a group of packages developed by R Studio that "share an underlying design philosophy, grammar, and data structures." Installing the tidyverse actually installs several core packages, including dplyr (for easy data manipulation).
 
 ```{r}
-install.packages("tidyverse")
 library("tidyverse")
 ```
 
 There are other tidyverse packages that are not part of the core packages, which need to be loaded explicitly.
 
 ```{r}
-install.packages("readxl")
 library("readxl")
 ```
 
